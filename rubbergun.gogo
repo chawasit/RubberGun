@@ -1,0 +1,151 @@
+to autorun
+	wait 15
+	welcome
+	cls
+	show "Calibrating"
+	set meanX calSensor1
+	set meanY calSensor2
+	wait 10
+	cls
+	show "Ready"
+	beep wait 3 beep wait 3 beep
+	set ypos 33
+	d, seth ypos
+	forever
+	[
+		wait 2
+		shooter
+		powerX meanX
+		set ypos ((powerY meanY ypos))
+	]
+end
+
+to welcome
+	cls
+	show "CPE 1.6"
+	setpos 17
+	show "Rubber GUN"
+	wait 15
+end
+
+to debug
+	setpos 0
+	show "X:" show sensor1 show "   "
+	setpos 17
+	show "Y:" show sensor2 show "   "
+end
+
+to calSensor1
+	set mean 0
+	set mean (mean+sensor1)
+	wait 3
+	set mean (mean+sensor1)
+	wait 3
+	set mean (mean+sensor1)
+	set mean (mean/3)
+	setpos 17
+	show "mX:"
+	show mean show "   "
+	output mean
+end
+
+to calSensor2
+	set mean 0
+	set mean (mean+sensor2)
+	wait 3
+	set mean (mean+sensor2)
+	wait 3
+	set mean (mean+sensor2)
+	set mean (mean/3)
+	setpos 24
+	show "mY:"
+	show mean show "   "
+	output mean
+end
+
+to powerX :mean
+	set idlemin (mean-60)
+	set idlemax (mean+60)
+	ifelse ((sensor1<idlemax) and (sensor1>idlemin))
+	[
+		a, off
+		setpos 0
+		show "Xpow:" show 0 show "    "
+	][
+		if (sensor1<idlemin)
+		[
+			a, on
+			cw
+			set power 60
+			ifelse (sensor1<(idlemin/2))
+			[
+				set power 100
+			]
+			setpower power
+			setpos 0
+			show "Xpow:" show power show "CW"
+		]
+		if (sensor1>idlemax)
+		[
+			a, on
+			ccw
+			set power 60
+			ifelse (sensor1>(idlemax+((1024-idlemax)/2)))
+			[
+				set power 100
+			]
+			setpower power
+			setpos 0
+			show "Xpow:" show power show "CC"
+		]
+	]
+end
+
+to powerY :mean :ypos
+	set idlemin (mean-80)
+	set idlemax (mean+80)
+	set ypos2 ypos
+	ifelse ((sensor2>idlemin) and (sensor2<idlemax))
+	[
+		setpos 17
+		show "yPos:" show ypos show "  "
+	][
+		if (sensor2<idlemin)
+		[
+			set ypos2 (ypos+1)
+		]
+		if (sensor2>idlemax)
+		[
+			set ypos2 (ypos-1)
+		]
+	]
+	if (ypos2>40) [ set ypos2 40 ]
+	if (ypos2<28) [ set ypos2 28 ]
+	setpos 17
+	show "Ypos:" show ypos2
+	d,
+	seth ypos2
+	output ypos2
+end
+
+to shooter
+	setpos 9 show "       "
+	c,
+	setpower 100
+	if sensor3>500
+	[
+		setpos 9 show "SHOOT"
+		on
+		cw
+		waituntil [ sensor3<650 ]
+	]
+	if sensor4>500
+	[
+		setpos 9 show "RELOAD"
+		on
+		ccw
+		wait 5
+		waituntil [ sensor8<650 ]
+	]
+	c, off
+end
